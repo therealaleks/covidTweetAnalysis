@@ -31,7 +31,7 @@ def cleanTweet(review):
     return li2
 
 
-def getCounts(input, cutoff):
+def getCounts(input, cutoff, categorie_column='topic'):
     # get data
     data = pd.read_csv(input)
 
@@ -41,22 +41,13 @@ def getCounts(input, cutoff):
     stopwords = set([str for str in stopwords.splitlines() if not str[0].strip() == '#'])
 
     # prepare output
-    out = {
-        "t": {},
-        "v": {},
-        "p": {},
-        "m": {},
-        "o": {},
-        "a": {},
-        "r": {},
-        "s": {}
-    }
-
-    topics = set([key for key, val in out.items()])
+    topics = set(pd.unique(data[categorie_column]))
+    print(topics)
+    out = { i:{} for i in list(topics)}
 
     # function to analyze a row of data
     def logRow(row):
-        if row['topic'].lower() in topics:
+        if row[categorie_column].lower() in topics:
             # clean = re.sub(r"[()[\],-.?!:;#&]+\ *", " ", row['text'])
             clean = cleanTweet(row['text'])
 
@@ -64,9 +55,9 @@ def getCounts(input, cutoff):
                       not str == '' and not str in stopwords]
 
             for word in text:
-                if not word in out[row['topic'].lower()]:
-                    out[row['topic'].lower()][word] = 0
-                out[row['topic'].lower()][word] += 1
+                if not word in out[row[categorie_column].lower()]:
+                    out[row[categorie_column].lower()][word] = 0
+                out[row[categorie_column].lower()][word] += 1
 
     # apply function above to every row of data
     data.apply(lambda row: logRow(row), axis=1)
@@ -106,6 +97,10 @@ def compute_top_k(counts, k):
 
 if __name__ == '__main__':
 
-    counts = getCounts('tweets.csv', 5)
+    counts = getCounts('tweets.csv', 5, 'topic')
+    lang = compute_top_k(counts, 10)
+    print(json.dumps(lang, indent=2))
+
+    counts = getCounts('tweets.csv', 5, 'sentiment')
     lang = compute_top_k(counts, 10)
     print(json.dumps(lang, indent=2))
