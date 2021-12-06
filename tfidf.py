@@ -42,7 +42,6 @@ def getCounts(input, cutoff, categorie_column='topic'):
 
     # prepare output
     topics = set(pd.unique(data[categorie_column]))
-    print(topics)
     out = { i:{} for i in list(topics)}
 
     # function to analyze a row of data
@@ -95,8 +94,18 @@ def compute_top_k(counts, k):
 
     return out
 
-if __name__ == '__main__':
 
+def clean_csv():
+    stopwords = request.urlopen(
+        'https://gist.githubusercontent.com/larsyencken/1440509/raw/53273c6c202b35ef00194d06751d8ef630e53df2/stopwords.txt')
+    stopwords = stopwords.read().decode(stopwords.headers.get_content_charset())
+    stopwords = set([str for str in stopwords.splitlines() if not str[0].strip() == '#'])
+    data = pd.read_csv('tweets.csv')
+    data['text_cleaned'] = [' '.join([z for z in cleanTweet(i) if z not in stopwords]) for i in data['text']]
+    data = data[['date', 'text', 'text_cleaned', 'topic', 'sentiment']]
+    data.to_csv('tweets.csv', index=False)
+
+if __name__ == '__main__':
     counts = getCounts('tweets.csv', 5, 'topic')
     lang = compute_top_k(counts, 10)
     print(json.dumps(lang, indent=2))
